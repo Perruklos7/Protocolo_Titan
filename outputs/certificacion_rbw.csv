@@ -1,0 +1,4 @@
+rbw_hz,rbw_khz,noise_figure_db,noise_floor_dbm,delta_vs_100khz_db,measurement_interpretation
+100000.0,100.0,6.0,-118.0,0.0,"RBW ancho: medida rápida, más ruido integrado."
+10000.0,10.0,6.0,-128.0,-10.0,"RBW estrecho: menor ruido integrado, barrido más lento."
+1000.0,1.0,6.0,-138.0,-20.0,"RBW estrecho: menor ruido integrado, barrido más lento."

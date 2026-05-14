@@ -1,0 +1,2 @@
+carrier_frequency_mhz,fdma_carrier_bandwidth_khz,tdma_timeslots_per_frame,timeslot_duration_us,frame_duration_ms
+900.0,200.0,8,577.0,4.6160000000000005
