@@ -232,6 +232,7 @@ def render_scenario_a(gsm, convoy, camp, analyzer):
             metric_card('Desplaz.', f"{selected_row['max_doppler_hz'] / 1000:.2f}", 'kHz', 'Escala visual')
         with c:
             metric_card('Estabilidad', f"{min(selected_row['coherence_to_timeslot_ratio'] * 26.8, 99):.1f}", '%', 'Indicador heurístico')
+        st.pyplot(figure_timeslot_signal(selected_trace), clear_figure=True, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with st.expander('Ver tablas técnicas de escenario A'):
