@@ -6,6 +6,7 @@ from tkinter import ttk
 import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
 
 from .config import GSMConfig, ConvoyScenario, CampScenario, AnalyzerConfig
 from .scenario_a import analyze_convoy_mobility, analyze_convoy_fading
@@ -162,6 +163,8 @@ class TitanGuiApp(tk.Tk):
         canvas.get_tk_widget().pack(fill="both", expand=True)
 
     def refresh(self) -> None:
+        plt.close("all")  # Libera la memoria de las figuras de la actualización anterior
+
         gsm = GSMConfig(carrier_frequency_hz=self.fc_mhz.get() * 1e6, timeslot_duration_s=self.timeslot_us.get() * 1e-6)
         convoy = ConvoyScenario(speeds_kmh=(self.speed_low.get(), self.speed_high.get()))
         camp = CampScenario(total_carriers=self.total_carriers.get(), cluster_size=self.cluster_size.get(), cell_radius_km=self.radius_km.get())

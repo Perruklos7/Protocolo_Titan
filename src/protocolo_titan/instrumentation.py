@@ -4,11 +4,15 @@ import pandas as pd
 from .config import AnalyzerConfig
 
 
-def analyzer_noise_floor_dbm(rbw_hz: float, noise_figure_db: float = 6.0) -> float:
-    """Calcula el suelo de ruido integrado en el RBW del analizador."""
+def analyzer_noise_floor_dbm(rbw_hz: float, noise_figure_db: float = 6.0, log_detector_correction: bool = True) -> float:
+    """Calcula el Nivel de Ruido Promedio Visualizado (DANL) en el RBW del analizador."""
     if rbw_hz <= 0:
         raise ValueError("RBW debe ser positivo.")
-    return -174.0 + 10.0 * math.log10(rbw_hz) + noise_figure_db
+        
+    danl = -174.0 + 10.0 * math.log10(rbw_hz) + noise_figure_db
+    if log_detector_correction:
+        danl -= 2.51
+    return danl
 
 
 def rbw_noise_table(config: AnalyzerConfig = AnalyzerConfig()) -> pd.DataFrame:

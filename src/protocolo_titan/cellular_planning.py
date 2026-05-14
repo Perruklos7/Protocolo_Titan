@@ -25,6 +25,19 @@ def reuse_distance_km(cell_radius_km: float, cluster_size: int) -> float:
     return cell_radius_km * reuse_ratio(cluster_size)
 
 
+def calculate_c_i_ratio_db(cluster_size: int, path_loss_exponent: float = 4.0, sectors: int = 1) -> float:
+    """Calcula la relación C/I exacta teórica para evitar errores de redondeo."""
+    if cluster_size <= 0:
+        raise ValueError("cluster_size debe ser positivo.")
+    if sectors not in [1, 3, 6]:
+        raise ValueError("Sectores soportados habitualmente: 1 (omni), 3 (120 grados), 6 (60 grados).")
+        
+    interferers = 6 if sectors == 1 else max(1, 6 // sectors)
+    d_over_r_pow_n = (math.sqrt(3 * cluster_size)) ** path_loss_exponent
+    
+    return 10 * math.log10((1 / interferers) * d_over_r_pow_n)
+
+
 def assign_arfcns(
     scenario: CampScenario = CampScenario(),
 ) -> Dict[str, List[int]]:
@@ -87,6 +100,9 @@ def frequency_planning_table(
     d = reuse_distance_km(scenario.cell_radius_km, scenario.cluster_size)
     d_over_r = reuse_ratio(scenario.cluster_size)
     per_cell = carriers_per_cell(scenario.total_carriers, scenario.cluster_size)
+    
+    # Usar valor exacto algebraico para C/I omnidireccional
+    c_i_db = calculate_c_i_ratio_db(scenario.cluster_size, sectors=1)
 
     rows = []
     for cell, arfcns in assignments.items():
@@ -102,6 +118,7 @@ def frequency_planning_table(
                 "arfcn_list": ", ".join(map(str, arfcns)),
                 "reuse_ratio_D_over_R": d_over_r,
                 "reuse_distance_km": d,
+                "c_i_ratio_db": round(c_i_db, 2),
             }
         )
 

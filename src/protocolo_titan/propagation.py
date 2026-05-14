@@ -19,10 +19,13 @@ def max_doppler_hz(speed_ms: float, carrier_frequency_hz: float, speed_of_light_
     return speed_ms * carrier_frequency_hz / speed_of_light_ms
 
 
-def coherence_time_s(doppler_hz: float) -> float:
+def coherence_time_s(doppler_hz: float, strict_margin: bool = False) -> float:
     if doppler_hz <= 0:
         return math.inf
-    return 0.423 / doppler_hz
+    # 0.423 asume correlación del 50% (comercial). 
+    # 0.179 asume correlación >90% para entornos tácticos/misión crítica.
+    numerator = 0.179 if strict_margin else 0.423
+    return numerator / doppler_hz
 
 
 def classify_timeslot_stability(coherence_s: float, timeslot_s: float) -> str:
