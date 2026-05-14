@@ -1,0 +1,3 @@
+scenario,cell_radius_km,speed_kmh,speed_ms,carrier_frequency_mhz,max_doppler_hz,coherence_time_ms,gsm_timeslot_ms,coherence_to_timeslot_ratio,stability_class
+A_convoy_alta_velocidad,3.0,50.0,13.88888888888889,900.0,41.666666666666664,10.152,0.5770000000000001,17.594454072790292,cuasiestatico
+A_convoy_alta_velocidad,3.0,250.0,69.44444444444444,900.0,208.33333333333334,2.0303999999999998,0.5770000000000001,3.5188908145580586,estable_con_margen_reducido

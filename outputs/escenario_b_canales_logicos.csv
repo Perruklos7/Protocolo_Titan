@@ -1,0 +1,25 @@
+cell,arfcn,carrier_role,frequency_hopping_recommended,power_policy,available_timeslots,engineering_note
+A,1,BCCH/CCCH control,False,fixed/stable,8,"BCCH debe ser detectable y estable para camping, sincronización y control."
+A,2,TCH traffic,True,adaptive if supported,8,TCH transporta tráfico; puede beneficiarse de hopping y control de potencia.
+A,3,TCH traffic,True,adaptive if supported,8,TCH transporta tráfico; puede beneficiarse de hopping y control de potencia.
+A,4,TCH traffic,True,adaptive if supported,8,TCH transporta tráfico; puede beneficiarse de hopping y control de potencia.
+A,5,TCH traffic,True,adaptive if supported,8,TCH transporta tráfico; puede beneficiarse de hopping y control de potencia.
+A,6,TCH traffic,True,adaptive if supported,8,TCH transporta tráfico; puede beneficiarse de hopping y control de potencia.
+B,7,BCCH/CCCH control,False,fixed/stable,8,"BCCH debe ser detectable y estable para camping, sincronización y control."
+B,8,TCH traffic,True,adaptive if supported,8,TCH transporta tráfico; puede beneficiarse de hopping y control de potencia.
+B,9,TCH traffic,True,adaptive if supported,8,TCH transporta tráfico; puede beneficiarse de hopping y control de potencia.
+B,10,TCH traffic,True,adaptive if supported,8,TCH transporta tráfico; puede beneficiarse de hopping y control de potencia.
+B,11,TCH traffic,True,adaptive if supported,8,TCH transporta tráfico; puede beneficiarse de hopping y control de potencia.
+B,12,TCH traffic,True,adaptive if supported,8,TCH transporta tráfico; puede beneficiarse de hopping y control de potencia.
+C,13,BCCH/CCCH control,False,fixed/stable,8,"BCCH debe ser detectable y estable para camping, sincronización y control."
+C,14,TCH traffic,True,adaptive if supported,8,TCH transporta tráfico; puede beneficiarse de hopping y control de potencia.
+C,15,TCH traffic,True,adaptive if supported,8,TCH transporta tráfico; puede beneficiarse de hopping y control de potencia.
+C,16,TCH traffic,True,adaptive if supported,8,TCH transporta tráfico; puede beneficiarse de hopping y control de potencia.
+C,17,TCH traffic,True,adaptive if supported,8,TCH transporta tráfico; puede beneficiarse de hopping y control de potencia.
+C,18,TCH traffic,True,adaptive if supported,8,TCH transporta tráfico; puede beneficiarse de hopping y control de potencia.
+D,19,BCCH/CCCH control,False,fixed/stable,8,"BCCH debe ser detectable y estable para camping, sincronización y control."
+D,20,TCH traffic,True,adaptive if supported,8,TCH transporta tráfico; puede beneficiarse de hopping y control de potencia.
+D,21,TCH traffic,True,adaptive if supported,8,TCH transporta tráfico; puede beneficiarse de hopping y control de potencia.
+D,22,TCH traffic,True,adaptive if supported,8,TCH transporta tráfico; puede beneficiarse de hopping y control de potencia.
+D,23,TCH traffic,True,adaptive if supported,8,TCH transporta tráfico; puede beneficiarse de hopping y control de potencia.
+D,24,TCH traffic,True,adaptive if supported,8,TCH transporta tráfico; puede beneficiarse de hopping y control de potencia.
