@@ -18,6 +18,8 @@ from protocolo_titan.ui_charts import (
     figure_cluster_map,
     figure_carrier_distribution,
     figure_spectrum_from_arfcns,
+    figure_doppler_coherence,
+    figure_reuse_distance,
     figure_small_camera_placeholder,
 )
 
@@ -93,7 +95,7 @@ def sidebar_controls():
             '<div class="sidebar-caption">HSR-700-ALPHA</div><div class="sidebar-header">MISSION CONTROL</div>',
             unsafe_allow_html=True,
         )
-        st.button('+ NEW SCENARIO')
+        st.button('+ NUEVO ESCENARIO')
         section = st.radio(
             'Secciones',
             ['Escenario A · Physics & Spectrum', 'Escenario B · Base Camp'],
@@ -103,13 +105,22 @@ def sidebar_controls():
         st.markdown('**Parámetros globales**')
         fc_mhz = st.number_input('Frecuencia central (MHz)', min_value=100.0, value=900.0, step=10.0)
         timeslot_us = st.number_input('Timeslot GSM (µs)', min_value=1.0, value=577.0, step=1.0)
-        st.markdown('**Escenario A**')
-        speed_low = st.number_input('Velocidad baja (km/h)', min_value=0.0, value=50.0, step=10.0)
-        speed_high = st.number_input('Velocidad alta (km/h)', min_value=0.0, value=250.0, step=10.0)
-        st.markdown('**Escenario B**')
-        total_carriers = st.number_input('Portadoras totales', min_value=1, value=24, step=1)
-        cluster_size = st.number_input('Clúster N', min_value=1, value=4, step=1)
-        radius_km = st.number_input('Radio celda campamento (km)', min_value=0.1, value=1.5, step=0.1)
+
+        if section.startswith('Escenario A'):
+            st.markdown('**Escenario A**')
+            speed_low = st.number_input('Velocidad baja (km/h)', min_value=0.0, value=50.0, step=10.0)
+            speed_high = st.number_input('Velocidad alta (km/h)', min_value=0.0, value=250.0, step=10.0)
+            total_carriers = 24
+            cluster_size = 4
+            radius_km = 1.5
+        else:
+            speed_low = 50.0
+            speed_high = 250.0
+            st.markdown('**Escenario B**')
+            total_carriers = st.number_input('Portadoras totales', min_value=1, value=24, step=1)
+            cluster_size = st.number_input('Clúster N', min_value=1, value=4, step=1)
+            radius_km = st.number_input('Radio celda campamento (km)', min_value=0.1, value=1.5, step=0.1)
+
         st.markdown('**Instrumentación**')
         nf_db = st.number_input('Figura de ruido NF (dB)', min_value=0.0, value=6.0, step=0.5)
         st.markdown('---')
@@ -134,29 +145,48 @@ def render_scenario_a(gsm, convoy, camp, analyzer):
     selected_row = mobility[mobility['speed_kmh'] == float(selected_speed)].iloc[0]
     selected_trace = traces[f'rician_{int(selected_speed)}_kmh']
 
-    c1, c2, c3 = st.columns([4, 4, 4])
-    with c1:
-        st.markdown('<div class="panel"><div class="panel-title">Capa física</div>', unsafe_allow_html=True)
-        a1, a2 = st.columns(2)
-        with a1:
-            metric_card('FDMA', '200', 'kHz', 'Portadoras GSM-900')
-        with a2:
-            metric_card('TDMA', '8', 'slots', 'Timeslots por trama')
-        b1, b2 = st.columns(2)
-        with b1:
-            metric_card('Separación', '200', 'kHz', 'Ancho por ARFCN')
-        with b2:
-            metric_card('Duración TS', '577', 'µs', 'Timeslot GSM')
-        st.markdown('</div>', unsafe_allow_html=True)
+    tab_summary, tab_fading, tab_instrumentacion = st.tabs(
+        ['Resumen físico', 'Fading & Coherencia', 'Instrumentación']
+    )
 
-    with c2:
-        st.markdown('<div class="panel"><div class="panel-title">Coherencia y Doppler</div>', unsafe_allow_html=True)
-        a1, a2 = st.columns(2)
-        with a1:
-            metric_card('Shift Doppler', f"{selected_row['max_doppler_hz']:.0f}", 'Hz', f'Velocidad {int(selected_speed)} km/h')
-        with a2:
-            metric_card('Tiempo coherencia', f"{selected_row['coherence_time_ms']:.2f}", 'ms', selected_row['stability_class'])
-        st.write('**Modelos de desvanecimiento**')
+    with tab_summary:
+        c1, c2, c3 = st.columns([4, 4, 4])
+        with c1:
+            st.markdown('<div class="panel"><div class="panel-title">Capa física</div>', unsafe_allow_html=True)
+            a1, a2 = st.columns(2)
+            with a1:
+                metric_card('FDMA', '200', 'kHz', 'Portadoras GSM-900')
+            with a2:
+                metric_card('TDMA', '8', 'slots', 'Timeslots por trama')
+            b1, b2 = st.columns(2)
+            with b1:
+                metric_card('Separación', '200', 'kHz', 'Ancho por ARFCN')
+            with b2:
+                metric_card('Duración TS', '577', 'µs', 'Timeslot GSM')
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with c2:
+            st.markdown('<div class="panel"><div class="panel-title">Coherencia y estabilidad</div>', unsafe_allow_html=True)
+            a1, a2 = st.columns(2)
+            with a1:
+                metric_card('Shift Doppler', f"{selected_row['max_doppler_hz']:.0f}", 'Hz', f'Velocidad {int(selected_speed)} km/h')
+            with a2:
+                metric_card('Tiempo coherencia', f"{selected_row['coherence_time_ms']:.2f}", 'ms', selected_row['stability_class'])
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with c3:
+            st.markdown('<div class="panel"><div class="panel-title">Visualización en vivo</div>', unsafe_allow_html=True)
+            st.pyplot(figure_small_camera_placeholder(), clear_figure=True, use_container_width=True)
+            x1, x2 = st.columns(2)
+            with x1:
+                metric_card('CAM', '04', '', 'Frontal')
+            with x2:
+                metric_card('Velocidad', f'{int(selected_speed)}', 'km/h', 'Convoy operativo')
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    with tab_fading:
+        st.markdown('<div class="panel"><div class="panel-title">Fading y estabilidad de canal</div>', unsafe_allow_html=True)
+        st.write('**Modelos de desvanecimiento por velocidad**')
         ray = float(
             fading_summary[
                 (fading_summary['speed_kmh'] == float(selected_speed)) & (fading_summary['model'] == 'rayleigh')
@@ -171,20 +201,14 @@ def render_scenario_a(gsm, convoy, camp, analyzer):
         st.progress(max(0.05, min(ray / 4.0, 1.0)))
         st.write('Rician (LOS dominante)')
         st.progress(max(0.05, min(ric / 2.0, 1.0)))
+        st.pyplot(figure_timeslot_signal(selected_trace), clear_figure=True, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    with c3:
-        st.markdown('<div class="panel"><div class="panel-title">Visualización en tiempo real</div>', unsafe_allow_html=True)
-        st.pyplot(figure_small_camera_placeholder(), clear_figure=True, use_container_width=True)
-        x1, x2 = st.columns(2)
-        with x1:
-            metric_card('CAM', '04', '', 'Frontal')
-        with x2:
-            metric_card('Velocidad', f'{int(selected_speed)}', 'km/h', 'Convoy operativo')
+        st.markdown('<div class="panel"><div class="panel-title">Doppler y coherencia</div>', unsafe_allow_html=True)
+        st.pyplot(figure_doppler_coherence(mobility), clear_figure=True, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    lower_left, lower_right = st.columns([8, 3])
-    with lower_left:
+    with tab_instrumentacion:
         st.markdown('<div class="panel"><div class="panel-title">Instrumentación de espectro</div>', unsafe_allow_html=True)
         st.radio('RBW', ['100 kHz', '10 kHz', '1 kHz'], horizontal=True, label_visibility='collapsed', index=1)
         info1, info2 = st.columns([1.3, 4.7])
@@ -200,8 +224,7 @@ def render_scenario_a(gsm, convoy, camp, analyzer):
             st.pyplot(figure_timeslot_signal(selected_trace), clear_figure=True, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    with lower_right:
-        st.markdown('<div class="panel"><div class="panel-title">Análisis de telemetría GSM</div>', unsafe_allow_html=True)
+        st.markdown('<div class="panel"><div class="panel-title">Telemetría GSM</div>', unsafe_allow_html=True)
         a, b, c = st.columns(3)
         with a:
             metric_card('Slot', '577', 'µs', 'Duración')
@@ -230,20 +253,27 @@ def render_scenario_b(gsm, camp, analyzer):
         unsafe_allow_html=True,
     )
 
-    top_left, top_right = st.columns([7, 3])
-    with top_left:
-        st.markdown('<div class="panel"><div class="panel-title">Mapeo de clúster (N=4)</div>', unsafe_allow_html=True)
-        st.pyplot(figure_cluster_map(), clear_figure=True, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+    tab_map, tab_plan, tab_spectrum = st.tabs(
+        ['Mapa de clúster', 'Planificación y canales', 'Espectro & Ruido']
+    )
 
-    with top_right:
-        st.markdown('<div class="panel"><div class="panel-title">Planificación celular (N=4)</div>', unsafe_allow_html=True)
-        reuse_ratio = float(plan['reuse_ratio_D_over_R'].iloc[0])
-        reuse_distance = float(plan['reuse_distance_km'].iloc[0])
-        metric_card('Distancia de reúso', f'{reuse_distance:.2f}', 'km', 'D = R √(3N)')
-        metric_card('Relación D/R', f'{reuse_ratio:.2f}', '', 'Protección co-canal')
-        metric_card('Factor de reúso', '1/4', '', 'Clúster N = 4')
-        st.markdown('<div class="panel-title" style="margin-top:12px;">Distribución de portadoras (24 CH)</div>', unsafe_allow_html=True)
+    with tab_map:
+        top_left, top_right = st.columns([7, 3])
+        with top_left:
+            st.markdown('<div class="panel"><div class="panel-title">Mapeo de clúster (N=4)</div>', unsafe_allow_html=True)
+            st.pyplot(figure_cluster_map(), clear_figure=True, use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with top_right:
+            reuse_ratio = float(plan['reuse_ratio_D_over_R'].iloc[0])
+            reuse_distance = float(plan['reuse_distance_km'].iloc[0])
+            metric_card('Distancia de reúso', f'{reuse_distance:.2f}', 'km', 'D = R √(3N)')
+            metric_card('Relación D/R', f'{reuse_ratio:.2f}', '', 'Protección co-canal')
+            metric_card('Factor de reúso', f'1/{int(camp.cluster_size)}', '', f'Clúster N = {int(camp.cluster_size)}')
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    with tab_plan:
+        st.markdown('<div class="panel"><div class="panel-title">Distribución de portadoras</div>', unsafe_allow_html=True)
         st.pyplot(figure_carrier_distribution(plan, logical), clear_figure=True, use_container_width=True)
         st.dataframe(logical[['cell', 'arfcn', 'carrier_role']].head(8), use_container_width=True, hide_index=True)
         st.markdown('<div class="panel-title" style="margin-top:12px;">Cumplimiento y normativa</div>', unsafe_allow_html=True)
@@ -257,17 +287,19 @@ def render_scenario_b(gsm, camp, analyzer):
         )
         st.markdown('</div>', unsafe_allow_html=True)
 
-    bottom_left, bottom_right = st.columns([5, 5])
-    with bottom_left:
+    with tab_spectrum:
         st.markdown('<div class="panel"><div class="panel-title">Gestión de interferencias (SIR)</div>', unsafe_allow_html=True)
-        st.pyplot(figure_carrier_distribution(plan, logical), clear_figure=True, use_container_width=True)
+        st.pyplot(figure_reuse_distance(plan), clear_figure=True, use_container_width=True)
         st.dataframe(plan[['cell', 'carriers_per_cell', 'arfcn_range', 'reuse_distance_km']], use_container_width=True, hide_index=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    with bottom_right:
         st.markdown('<div class="panel"><div class="panel-title">Análisis de espectro y ruido</div>', unsafe_allow_html=True)
         st.pyplot(figure_spectrum_from_arfcns(logical), clear_figure=True, use_container_width=True)
         st.pyplot(figure_noise(noise), clear_figure=True, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown('<div class="panel"><div class="panel-title">Checklist de certificación</div>', unsafe_allow_html=True)
+        st.dataframe(checklist, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with st.expander('Ver tablas técnicas de escenario B'):

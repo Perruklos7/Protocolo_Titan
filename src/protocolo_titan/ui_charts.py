@@ -51,6 +51,31 @@ def figure_noise(df: pd.DataFrame):
     return fig
 
 
+def figure_doppler_coherence(mobility: pd.DataFrame):
+    fig, ax = plt.subplots(figsize=(7.0, 3.6))
+    _dark_axes(fig, ax)
+    ax2 = ax.twinx()
+    ax.plot(mobility['speed_kmh'], mobility['max_doppler_hz'], marker='o', color='#7EE6FF', linewidth=2, label='Doppler')
+    ax2.plot(mobility['speed_kmh'], mobility['coherence_time_ms'], marker='s', color='#F3C74B', linewidth=2, label='Coherencia')
+    ax.set_xlabel('Velocidad (km/h)')
+    ax.set_ylabel('Doppler máximo (Hz)')
+    ax2.set_ylabel('Tiempo de coherencia (ms)')
+    ax.set_title('DOPPLER Y COHERENCIA VS VELOCIDAD', loc='left', fontsize=13, fontweight='bold')
+    ax.legend(loc='upper left', facecolor='#0E1B2E', edgecolor='#2D4060', labelcolor='#DDE9FF')
+    ax2.legend(loc='upper right', facecolor='#0E1B2E', edgecolor='#2D4060', labelcolor='#DDE9FF')
+    return fig
+
+
+def figure_reuse_distance(plan_df: pd.DataFrame):
+    fig, ax = plt.subplots(figsize=(6.5, 3.4))
+    _dark_axes(fig, ax)
+    ax.bar(plan_df['cell'], plan_df['reuse_distance_km'], color='#5DD1FF', edgecolor='#72C7FF')
+    ax.set_xlabel('Celda')
+    ax.set_ylabel('Distancia de reúso D (km)')
+    ax.set_title('DISTANCIA DE REÚSO POR CELDA', loc='left', fontsize=12, fontweight='bold')
+    return fig
+
+
 def figure_cluster_map():
     fig, ax = plt.subplots(figsize=(8, 7))
     _dark_axes(fig, ax)
