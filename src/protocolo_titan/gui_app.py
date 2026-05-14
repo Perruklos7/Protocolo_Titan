@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import tkinter as tk
 from tkinter import ttk
-from tkinter.scrolledtext import ScrolledText
 
+import matplotlib
+matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from .config import GSMConfig, ConvoyScenario, CampScenario, AnalyzerConfig
-from .radio_access import gsm_access_summary
 from .scenario_a import analyze_convoy_mobility, analyze_convoy_fading
 from .scenario_b import analyze_camp_base
 from .ui_charts import (
@@ -25,7 +25,7 @@ from .ui_charts import (
 class TitanGuiApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
-        self.title("Protocolo Titan — Interfaz de Ventana")
+        self.title("Protocolo Titan — Ventana de Resultados")
         self.geometry("1320x860")
         self.configure(bg="#1d2431")
         self._init_variables()
@@ -37,7 +37,7 @@ class TitanGuiApp(tk.Tk):
         self.timeslot_us = tk.DoubleVar(value=577.0)
         self.speed_low = tk.DoubleVar(value=50.0)
         self.speed_high = tk.DoubleVar(value=250.0)
-        self.speed_profile = tk.IntVar(value=250)
+        self.speed_profile = tk.StringVar(value="250")
         self.total_carriers = tk.IntVar(value=24)
         self.cluster_size = tk.IntVar(value=4)
         self.radius_km = tk.DoubleVar(value=1.5)
@@ -53,23 +53,23 @@ class TitanGuiApp(tk.Tk):
         style = ttk.Style(self)
         style.theme_use("default")
         style.configure("TNotebook", background="#192032", borderwidth=0)
-        style.configure("TNotebook.Tab", background="#24304a", foreground="#e8f4ff", padding=[12, 8])
+        style.configure("TNotebook.Tab", background="#24304a", foreground="#e8f4ff", padding=[14, 10])
         style.map("TNotebook.Tab", background=[("selected", "#325182")])
         style.configure("TFrame", background="#152037")
         style.configure("TLabel", background="#152037", foreground="#e8f4ff")
         style.configure("TButton", background="#2a4a72", foreground="#e8f4ff")
-        style.configure("Header.TLabel", font=("Segoe UI", 12, "bold"), background="#152037")
+        style.configure("Header.TLabel", font=("Segoe UI", 13, "bold"), background="#152037")
 
         root_frame = ttk.Frame(self)
         root_frame.pack(fill="both", expand=True, padx=10, pady=10)
         root_frame.columnconfigure(1, weight=1)
         root_frame.rowconfigure(0, weight=1)
 
-        controls = ttk.LabelFrame(root_frame, text="Parámetros", padding=12)
+        controls = ttk.LabelFrame(root_frame, text="Parámetros", padding=14)
         controls.grid(row=0, column=0, sticky="nsew", padx=(0, 10), pady=0)
         controls.columnconfigure(1, weight=1)
 
-        entries = [
+        rows = [
             ("Frecuencia central (MHz)", self.fc_mhz),
             ("Timeslot GSM (µs)", self.timeslot_us),
             ("Velocidad baja (km/h)", self.speed_low),
@@ -80,11 +80,16 @@ class TitanGuiApp(tk.Tk):
             ("Radio celda (km)", self.radius_km),
             ("Figura de ruido NF (dB)", self.nf_db),
         ]
-        for index, (label, variable) in enumerate(entries):
-            self._label(controls, label).grid(row=index, column=0, sticky="w", pady=4)
-            ttk.Entry(controls, textvariable=variable, width=18).grid(row=index, column=1, sticky="ew", pady=4)
 
-        ttk.Button(controls, text="Actualizar resultados", command=self.refresh).grid(row=len(entries), column=0, columnspan=2, pady=(12, 0), sticky="ew")
+        for idx, (label_text, variable) in enumerate(rows):
+            self._label(controls, label_text).grid(row=idx, column=0, sticky="w", pady=5)
+            if label_text == "Perfil activo (km/h)":
+                combo = ttk.Combobox(controls, textvariable=variable, values=("50", "250"), state="readonly", width=18)
+                combo.grid(row=idx, column=1, sticky="ew", pady=5)
+            else:
+                ttk.Entry(controls, textvariable=variable, width=20).grid(row=idx, column=1, sticky="ew", pady=5)
+
+        ttk.Button(controls, text="Actualizar resultados", command=self.refresh).grid(row=len(rows), column=0, columnspan=2, sticky="ew", pady=(16, 0))
 
         notebook = ttk.Notebook(root_frame)
         notebook.grid(row=0, column=1, sticky="nsew")
@@ -101,38 +106,36 @@ class TitanGuiApp(tk.Tk):
         frame = self.tab_a
         frame.columnconfigure(0, weight=1)
         frame.columnconfigure(1, weight=1)
-        frame.rowconfigure(1, weight=1)
+        frame.rowconfigure(2, weight=1)
 
         header = ttk.Label(frame, text="Convoy de alta velocidad", style="Header.TLabel")
-        header.grid(row=0, column=0, columnspan=2, sticky="w", pady=(8, 10), padx=10)
+        header.grid(row=0, column=0, columnspan=2, sticky="w", pady=(8, 14), padx=10)
 
-        metric_frame = ttk.Frame(frame, padding=10)
-        metric_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=5)
-        metric_frame.columnconfigure(0, weight=1)
-        metric_frame.columnconfigure(1, weight=1)
-        metric_frame.columnconfigure(2, weight=1)
+        metrics = ttk.Frame(frame, padding=12)
+        metrics.grid(row=1, column=0, columnspan=2, sticky="ew", padx=10)
+        metrics.columnconfigure((0, 1, 2), weight=1)
 
-        self._label(metric_frame, "Doppler máximo:").grid(row=0, column=0, sticky="w", pady=6)
-        ttk.Label(metric_frame, textvariable=self.metric_doppler).grid(row=1, column=0, sticky="w")
-        self._label(metric_frame, "Tiempo de coherencia:").grid(row=0, column=1, sticky="w", pady=6)
-        ttk.Label(metric_frame, textvariable=self.metric_coherence).grid(row=1, column=1, sticky="w")
-        self._label(metric_frame, "Estabilidad:").grid(row=0, column=2, sticky="w", pady=6)
-        ttk.Label(metric_frame, textvariable=self.metric_stability).grid(row=1, column=2, sticky="w")
+        self._label(metrics, "Doppler máximo:").grid(row=0, column=0, sticky="w", pady=4)
+        ttk.Label(metrics, textvariable=self.metric_doppler).grid(row=1, column=0, sticky="w")
+        self._label(metrics, "Tiempo de coherencia:").grid(row=0, column=1, sticky="w", pady=4)
+        ttk.Label(metrics, textvariable=self.metric_coherence).grid(row=1, column=1, sticky="w")
+        self._label(metrics, "Estabilidad:").grid(row=0, column=2, sticky="w", pady=4)
+        ttk.Label(metrics, textvariable=self.metric_stability).grid(row=1, column=2, sticky="w")
 
-        self.camera_frame = ttk.Frame(frame, height=320)
+        self.camera_frame = ttk.Frame(frame, padding=10)
         self.camera_frame.grid(row=2, column=0, sticky="nsew", padx=10, pady=5)
         self.camera_frame.columnconfigure(0, weight=1)
         self.camera_frame.rowconfigure(0, weight=1)
 
-        right_panel = ttk.Frame(frame)
-        right_panel.grid(row=1, column=1, rowspan=2, sticky="nsew", padx=10, pady=5)
-        right_panel.columnconfigure(0, weight=1)
-        right_panel.rowconfigure(0, weight=1)
-        right_panel.rowconfigure(1, weight=1)
+        right = ttk.Frame(frame, padding=10)
+        right.grid(row=2, column=1, sticky="nsew", padx=10, pady=5)
+        right.columnconfigure(0, weight=1)
+        right.rowconfigure(0, weight=1)
+        right.rowconfigure(1, weight=1)
 
-        self.doppler_frame = ttk.Frame(right_panel)
+        self.doppler_frame = ttk.Frame(right)
         self.doppler_frame.grid(row=0, column=0, sticky="nsew", pady=(0, 8))
-        self.trace_frame = ttk.Frame(right_panel)
+        self.trace_frame = ttk.Frame(right)
         self.trace_frame.grid(row=1, column=0, sticky="nsew")
 
     def _build_tab_b(self) -> None:
@@ -142,22 +145,21 @@ class TitanGuiApp(tk.Tk):
         frame.rowconfigure(0, weight=1)
         frame.rowconfigure(1, weight=1)
 
-        self.cluster_frame = ttk.Frame(frame)
+        self.cluster_frame = ttk.Frame(frame, padding=10)
         self.cluster_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=5)
-        self.reuse_frame = ttk.Frame(frame)
+        self.reuse_frame = ttk.Frame(frame, padding=10)
         self.reuse_frame.grid(row=0, column=1, sticky="nsew", padx=10, pady=5)
-        self.spectrum_frame = ttk.Frame(frame)
+        self.spectrum_frame = ttk.Frame(frame, padding=10)
         self.spectrum_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=5)
-        self.noise_frame = ttk.Frame(frame)
+        self.noise_frame = ttk.Frame(frame, padding=10)
         self.noise_frame.grid(row=1, column=1, sticky="nsew", padx=10, pady=5)
 
-    def _draw_figure(self, fig, frame: tk.Widget) -> FigureCanvasTkAgg:
+    def _draw_figure(self, fig, frame: tk.Widget) -> None:
         for child in frame.winfo_children():
             child.destroy()
         canvas = FigureCanvasTkAgg(fig, master=frame)
         canvas.draw()
         canvas.get_tk_widget().pack(fill="both", expand=True)
-        return canvas
 
     def refresh(self) -> None:
         gsm = GSMConfig(carrier_frequency_hz=self.fc_mhz.get() * 1e6, timeslot_duration_s=self.timeslot_us.get() * 1e-6)
@@ -169,7 +171,16 @@ class TitanGuiApp(tk.Tk):
         fading_summary, traces = analyze_convoy_fading(convoy, gsm)
         camp_results = analyze_camp_base(camp, gsm, analyzer)
 
-        speed = self.speed_profile.get()
+        try:
+            speed = int(self.speed_profile.get())
+        except ValueError:
+            speed = 250
+            self.speed_profile.set("250")
+
+        if speed not in (50, 250):
+            speed = 250
+            self.speed_profile.set("250")
+
         trace_key = f"rician_{speed}_kmh"
         selected_trace = traces.get(trace_key, next(iter(traces.values())))
         selected_row = mobility[mobility["speed_kmh"] == float(speed)].iloc[0]
