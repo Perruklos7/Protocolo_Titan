@@ -51,7 +51,7 @@ class TitanGuiApp(tk.Tk):
         self.cluster_size = tk.IntVar(value=4)
         self.radius_km = tk.DoubleVar(value=1.5)
         self.nf_db = tk.DoubleVar(value=6.0)
-        self.zoom_factor = tk.DoubleVar(value=1.0)
+        self.pan_position = tk.DoubleVar(value=0.0)
         self.metric_doppler = tk.StringVar(value="0 Hz")
         self.metric_coherence = tk.StringVar(value="0 ms")
         self.metric_stability = tk.StringVar(value="—")
@@ -89,13 +89,17 @@ class TitanGuiApp(tk.Tk):
         content_container.grid(row=0, column=1, sticky="nsew")
         content_container.columnconfigure(0, weight=1)
         content_container.rowconfigure(0, weight=1)
+        content_container.rowconfigure(1, weight=0)
 
         self.content_canvas = tk.Canvas(content_container, bg=self.panel_bg, highlightthickness=0)
         self.content_canvas.grid(row=0, column=0, sticky="nsew")
 
         self.content_scrollbar = ttk.Scrollbar(content_container, orient="vertical", command=self.content_canvas.yview)
         self.content_scrollbar.grid(row=0, column=1, sticky="ns")
-        self.content_canvas.configure(yscrollcommand=self.content_scrollbar.set)
+        self.content_scrollbar_x = ttk.Scrollbar(content_container, orient="horizontal", command=self.content_canvas.xview)
+        self.content_scrollbar_x.grid(row=1, column=0, sticky="ew")
+
+        self.content_canvas.configure(yscrollcommand=self.content_scrollbar.set, xscrollcommand=self.content_scrollbar_x.set)
 
         self.content_frame = tk.Frame(self.content_canvas, bg=self.panel_bg)
         self.content_window = self.content_canvas.create_window((0, 0), window=self.content_frame, anchor="nw")
@@ -269,7 +273,9 @@ class TitanGuiApp(tk.Tk):
 
     def _build_results_tab(self, parent: tk.Widget) -> None:
         parent.columnconfigure(0, weight=1)
-        parent.rowconfigure(1, weight=1)
+        parent.rowconfigure(1, weight=0)
+        parent.rowconfigure(2, weight=0)
+        parent.rowconfigure(3, weight=1)
 
         band_frame = tk.Frame(parent, bg=self.panel_bg)
         band_frame.grid(row=0, column=0, sticky="ew", padx=18, pady=(12, 8))
@@ -281,17 +287,27 @@ class TitanGuiApp(tk.Tk):
         self._build_dashboard_card(band_frame, "Velocidad Convoy", self.velocity_main, "", 2)
         self._build_dashboard_card(band_frame, "Estabilidad", self.metric_stability, "", 3)
 
-        zoom_frame = tk.Frame(parent, bg=self.panel_bg)
-        zoom_frame.grid(row=1, column=0, sticky="ew", padx=18, pady=(0, 10))
-        zoom_frame.columnconfigure(0, weight=1)
-        zoom_frame.columnconfigure(1, weight=0)
-        zoom_frame.columnconfigure(2, weight=0)
-        zoom_frame.columnconfigure(3, weight=0)
+        # Zoom controls removed from UI (global pan slider remains below)
 
-        self._build_zoom_controls(zoom_frame)
+        pan_frame = tk.Frame(parent, bg=self.panel_bg)
+        pan_frame.grid(row=2, column=0, sticky="ew", padx=18, pady=(0, 10))
+        tk.Label(pan_frame, text="Desplazamiento horizontal:", bg=self.panel_bg, fg=self.text_fg, font=("Segoe UI", 10, "bold")).grid(row=0, column=0, sticky="w")
+        pan_slider = ttk.Scale(
+            pan_frame,
+            from_=0,
+            to=100,
+            orient="horizontal",
+            variable=self.pan_position,
+            command=self._pan_results,
+            length=360,
+        )
+        pan_slider.grid(row=0, column=1, sticky="ew", padx=(12, 0))
+        pan_label = tk.Label(pan_frame, textvariable=self.pan_position, bg=self.panel_bg, fg=self.accent, font=("Segoe UI", 10, "bold"))
+        pan_label.grid(row=0, column=2, padx=(12, 0))
+        pan_frame.columnconfigure(1, weight=1)
 
         dashboard = tk.Frame(parent, bg=self.panel_bg)
-        dashboard.grid(row=2, column=0, sticky="nsew", padx=18, pady=(0, 18))
+        dashboard.grid(row=3, column=0, sticky="nsew", padx=18, pady=(0, 18))
         dashboard.columnconfigure(0, weight=2)
         dashboard.columnconfigure(1, weight=1)
         dashboard.rowconfigure(0, weight=2)
@@ -304,6 +320,8 @@ class TitanGuiApp(tk.Tk):
 
         self.main_chart_frame = tk.Frame(left_panel, bg=self.card_bg)
         self.main_chart_frame.grid(row=0, column=0, sticky="nsew", padx=20, pady=20)
+        self.main_chart_frame.columnconfigure(0, weight=1)
+        self.main_chart_frame.rowconfigure(0, weight=1)
 
         right_panel = tk.Frame(dashboard, bg=self.card_bg)
         right_panel.grid(row=0, column=1, sticky="nsew", pady=(0, 12))
@@ -370,46 +388,26 @@ class TitanGuiApp(tk.Tk):
             tk.Label(row, text=f" {suffix}", bg=self.card_bg, fg=self.accent, font=("Segoe UI", 12, "bold")).pack(side="left")
 
     def _build_zoom_controls(self, parent: tk.Widget) -> None:
-        label = tk.Label(parent, text="Zoom resultados:", bg=self.panel_bg, fg=self.text_fg, font=("Segoe UI", 10, "bold"))
-        label.grid(row=0, column=0, sticky="w")
-
-        minus_btn = tk.Button(parent, text="-", command=self._decrease_zoom, width=3, bg="#0F1A2C", fg=self.text_fg, bd=0, relief="flat", font=("Segoe UI", 10, "bold"))
-        minus_btn.grid(row=0, column=1, padx=(8, 0))
-        zoom_slider = ttk.Scale(
-            parent,
-            from_=0.5,
-            to=2.0,
-            orient="horizontal",
-            variable=self.zoom_factor,
-            command=self._slider_zoom,
-            length=220,
-        )
-        zoom_slider.grid(row=0, column=2, padx=(8, 0), sticky="ew")
-        zoom_value = tk.Label(parent, textvariable=self.zoom_factor, bg=self.panel_bg, fg=self.accent, font=("Segoe UI", 10, "bold"))
-        zoom_value.grid(row=0, column=3, padx=(8, 0))
-        plus_btn = tk.Button(parent, text="+", command=self._increase_zoom, width=3, bg="#0F1A2C", fg=self.text_fg, bd=0, relief="flat", font=("Segoe UI", 10, "bold"))
-        plus_btn.grid(row=0, column=4, padx=(8, 0))
+        # Zoom controls removed — placeholder for layout consistency.
+        spacer = tk.Label(parent, text="", bg=self.panel_bg)
+        spacer.grid(row=0, column=0)
 
     def _increase_zoom(self) -> None:
-        zoom = min(2.0, self.zoom_factor.get() + 0.1)
-        self.zoom_factor.set(round(zoom, 2))
-        self.refresh()
+        return
 
     def _decrease_zoom(self) -> None:
-        zoom = max(0.5, self.zoom_factor.get() - 0.1)
-        self.zoom_factor.set(round(zoom, 2))
-        self.refresh()
+        return
 
     def _slider_zoom(self, value: str) -> None:
-        zoom = round(float(value), 2)
-        self.zoom_factor.set(zoom)
-        self.refresh()
+        return
 
     def _on_content_configure(self, event: tk.Event) -> None:
         self.content_canvas.configure(scrollregion=self.content_canvas.bbox("all"))
 
     def _on_canvas_configure(self, event: tk.Event) -> None:
-        self.content_canvas.itemconfig(self.content_window, width=event.width)
+        content_width = self.content_frame.winfo_reqwidth()
+        self.content_canvas.itemconfig(self.content_window, width=max(event.width, content_width))
+        self.content_canvas.configure(scrollregion=self.content_canvas.bbox("all"))
 
     def _on_mousewheel(self, event: tk.Event) -> None:
         if event.num == 4:
@@ -522,12 +520,13 @@ class TitanGuiApp(tk.Tk):
             width = 640
         if height < 10:
             height = 360
-        zoom = self.zoom_factor.get()
-        fig.set_size_inches((width * zoom) / fig.dpi, (height * zoom) / fig.dpi)
+        fig.set_size_inches(width / fig.dpi, height / fig.dpi)
         fig.tight_layout(pad=0.8)
         canvas = FigureCanvasTkAgg(fig, master=frame)
         canvas.draw()
-        canvas.get_tk_widget().pack(fill="both", expand=True)
+        widget = canvas.get_tk_widget()
+        widget.configure(width=int(width), height=int(height))
+        widget.pack(fill="both", expand=True)
 
     def refresh(self) -> None:
         try:
@@ -597,6 +596,13 @@ class TitanGuiApp(tk.Tk):
             self.metric_doppler.set("Error")
             self.metric_coherence.set("Error")
             self.metric_stability.set("Error")
+
+    def _pan_results(self, value: str) -> None:
+        try:
+            position = float(value) / 100.0
+            self.content_canvas.xview_moveto(position)
+        except (TypeError, ValueError):
+            pass
 
 
 def main() -> None:
