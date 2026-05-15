@@ -271,6 +271,19 @@ class TitanGuiApp(tk.Tk):
             pady=12,
         ).pack(fill="x", pady=12)
 
+        tk.Button(
+            right_panel,
+            text="VALORES POR DEFECTO",
+            command=self._reset_defaults,
+            bg="#2E7DFF",
+            fg="#FFFFFF",
+            bd=0,
+            relief="flat",
+            padx=18,
+            pady=10,
+            font=("Segoe UI", 10, "bold"),
+        ).pack(fill="x", pady=(4, 12))
+
     def _build_results_tab(self, parent: tk.Widget) -> None:
         parent.columnconfigure(0, weight=1)
         parent.rowconfigure(1, weight=0)
@@ -480,19 +493,6 @@ class TitanGuiApp(tk.Tk):
         input_row("Clúster N", self.cluster_size, 1, 0)
         input_row("Radio celda (km)", self.radius_km, 0.1, 1)
         input_row("Figura de ruido (NF dB)", self.nf_db, 0.5, 1)
-
-        tk.Button(
-            parent,
-            text="VALORES POR DEFECTO",
-            command=self._reset_defaults,
-            bg="#2E7DFF",
-            fg="#FFFFFF",
-            bd=0,
-            relief="flat",
-            padx=18,
-            pady=8,
-            font=("Segoe UI", 10, "bold"),
-        ).pack(fill="x", padx=16, pady=(8, 4))
 
         tk.Button(
             parent,
