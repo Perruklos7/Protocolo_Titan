@@ -483,6 +483,19 @@ class TitanGuiApp(tk.Tk):
 
         tk.Button(
             parent,
+            text="VALORES POR DEFECTO",
+            command=self._reset_defaults,
+            bg="#2E7DFF",
+            fg="#FFFFFF",
+            bd=0,
+            relief="flat",
+            padx=18,
+            pady=8,
+            font=("Segoe UI", 10, "bold"),
+        ).pack(fill="x", padx=16, pady=(8, 4))
+
+        tk.Button(
+            parent,
             text="EJECUTAR CÁLCULO",
             bg="#57C1FF",
             fg="#08111F",
@@ -493,6 +506,24 @@ class TitanGuiApp(tk.Tk):
             font=("Segoe UI", 11, "bold"),
             command=lambda: (self.refresh(), self._select_tab("Resultados")),
         ).pack(fill="x", padx=16, pady=18)
+
+    def _reset_defaults(self) -> None:
+        # Restore initial input values
+        self.fc_mhz.set(900.0)
+        self.timeslot_us.set(577.0)
+        self.speed_low.set(50.0)
+        self.speed_high.set(250.0)
+        self.speed_profile.set("250")
+        self.total_carriers.set(24)
+        self.cluster_size.set(4)
+        self.radius_km.set(1.5)
+        self.nf_db.set(6.0)
+        self.pan_position.set(0.0)
+        # Refresh derived metrics/UI
+        try:
+            self.refresh()
+        except Exception:
+            pass
 
     def _build_stat_card(self, parent: tk.Widget, title: str, value_var: tk.StringVar, col: int, row: int) -> None:
         card = tk.Frame(parent, bg=self.card_bg, bd=0, relief="flat", padx=14, pady=14)
